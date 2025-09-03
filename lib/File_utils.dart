@@ -22,7 +22,6 @@ class FileDownload {
         savePath,
         options: Options(
           receiveTimeout: const Duration(milliseconds: 30000),
-          connectTimeout: const Duration(milliseconds: 30000),
           sendTimeout: const Duration(milliseconds: 30000),
         ),
       );

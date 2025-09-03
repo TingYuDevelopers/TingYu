@@ -1,27 +1,53 @@
 // 库
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:video_player/video_player.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:http/http.dart' as http;//hhtp客户端用于网络请求
-import 'dart:io';//文件操作
+import 'package:http/http.dart' as http;//http客户端用于网络请求
+import 'dart:io' as io;//文件操作，重命名为io以避免冲突
 import 'package:my_app/word_puzzle/word_puzzle_page.dart';
-import 'package:video_player/video_player.dart'; // 引入视频播放库
+// 引入视频播放库
 import 'AiChat/ChatScreen.dart';
+import 'AiChat/ChatService.dart';
 import 'dart:html' as html;
+import 'study/study.dart';
+import 'conversation/conversation_audio.dart';
 
 // 应用入口函数
-void main() async{
-  WidgetsFlutterBinding.ensureInitialized();
-  runApp(MyApp());
+void main() {
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => ChatService(),
+      child: const MyApp(), 
+    ),
+  );
 }
 
+// class MyApp extends StatelessWidget {
+//   const MyApp({super.key});
+
+//   @override
+//   Widget build(BuildContext context) {
+//     // 现在，MyApp 和它的所有子 Widget (包括 MaterialApp 和 ChatPage)
+//     // 都在 ChangeNotifierProvider 的“下方”，因此可以安全地访问 ChatService。
+//     return MaterialApp(
+//       title: 'ZhuiYu-听障康复软件',
+//       theme: ThemeData(
+//         primarySwatch: Colors.blue,
+//         useMaterial3: true,
+//       ),
+//       home: const ChatPage(), // 你的聊天页面
+//     );
+//   }
+// }
 // 主应用组件
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +63,7 @@ class MyApp extends StatelessWidget {
 
 // 主页组件
 class MainPage extends StatelessWidget {
-  const MainPage({Key? key}) : super(key: key);
+  const MainPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +89,7 @@ class MainPage extends StatelessWidget {
                   ),
                   SizedBox(height: 20),
                   Text(
-                    'Owl_Talk',
+                    '缀语精灵',
                     style: TextStyle(
                       fontSize: 28,
                       color: Colors.white,
@@ -141,7 +167,7 @@ class MainPage extends StatelessWidget {
 
 // 目录页面组件 - 转换为StatefulWidget以支持录音状态管理
 class MenuPage extends StatefulWidget {
-  const MenuPage({Key? key}) : super(key: key);
+  const MenuPage({super.key});
 
   @override
   _MenuPageState createState() => _MenuPageState();
@@ -186,7 +212,7 @@ class _MenuPageState extends State<MenuPage> {
       formData.appendBlob('image', blob, imageFile.name);
 
       final response = await html.HttpRequest.request(
-        'http://192.168.50.141:5000/api/upload/image',
+        'http://192.168.233.1:5000/api/upload/image',
         method: 'POST',
         sendData: formData,
       );
@@ -196,7 +222,7 @@ class _MenuPageState extends State<MenuPage> {
         print('图片上传失败: ${response.status}');
       }
     } else { // 非 Web 环境
-      final url = Uri.parse('http://192.168.50.141:5000/api/upload/image');
+      final url = Uri.parse('http://192.168.233.1:5000/api/upload/image');
       try {
         final request = http.MultipartRequest('POST', url);
         final file = await http.MultipartFile.fromPath('image', imageFile.path);
@@ -217,7 +243,7 @@ class _MenuPageState extends State<MenuPage> {
   }
   //上传音频的方法
   Future<void> uploadAudio(String audioFilePath) async {
-    final url = Uri.parse('http://192.168.50.141:5000/api/upload/audio');
+    final url = Uri.parse('http://192.168.233.1:5000/api/upload/audio');
     try {
       final request = http.MultipartRequest('POST', url);
       final file = await http.MultipartFile.fromPath('audio', audioFilePath);
@@ -238,13 +264,13 @@ class _MenuPageState extends State<MenuPage> {
   }
   //抓取视频文件
   Future<void> downloadFile(String filename) async {
-    var url = 'http://192.168.50.141:5000/api/receive-video/$filename';
+    var url = 'http://192.168.233.1:5000/api/receive-video/$filename';
     var response = await http.get(Uri.parse(url));
 
     if (response.statusCode == 200) {
-      Directory appDocDir = await getApplicationDocumentsDirectory();
+      io.Directory appDocDir = await getApplicationDocumentsDirectory();
       String savePath = '${appDocDir.path}/$filename';
-      File file = File(savePath);
+      io.File file = io.File(savePath);
       await file.writeAsBytes(response.bodyBytes);
       print('File saved to: $savePath');
 
@@ -260,13 +286,13 @@ class _MenuPageState extends State<MenuPage> {
       throw Exception('Download failed: ${response.statusCode}');
     }
   }
-  File XfileConvertToFile(XFile XFile){
-    return File(XFile.path);
+  io.File XfileConvertToFile(XFile XFile){
+    return io.File(XFile.path);
   }
 
   //抓取唇语视频
   Future<void> generateLipSync(String sentence, String videoPath) async {
-    var url = Uri.parse('http://192.168.50.141:5000/api/generate-lipsync');
+    var url = Uri.parse('http://192.168.233.1:5000/api/generate-lipsync');
     var response = await http.post(url, headers:{'Content-Type':'application/json'},body: jsonEncode({
       'sentence': sentence,
       'video_path':videoPath,
@@ -288,7 +314,7 @@ class _MenuPageState extends State<MenuPage> {
         await _videoPlayerController.dispose();
         
         // 创建新的控制器实例
-        _videoPlayerController = VideoPlayerController.file(File(_videoFilePath!));
+        _videoPlayerController = VideoPlayerController.file(io.File(_videoFilePath!));
         
         // 初始化视频
         await _videoPlayerController.initialize();
@@ -366,127 +392,127 @@ class _MenuPageState extends State<MenuPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    try {
-      return Scaffold(
-        appBar: AppBar(
-          title: Text('目录页面'),
+Widget build(BuildContext context) {
+  // 使用 MediaQuery.of(context) 来获取一次屏幕尺寸，避免在多处重复调用
+  final screenSize = MediaQuery.of(context).size;
+
+  return Scaffold(
+    appBar: AppBar(
+      title: Text('目录页面'),
+    ),
+    body: Container(
+      // 确保背景容器填满整个屏幕
+      width: double.infinity,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage('assets/background.jpg'),
+          fit: BoxFit.cover,
         ),
-        body: Container(
-          decoration: BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage('assets/background.jpg'),
-              fit: BoxFit.cover,
+      ),
+      // 1. 核心修改：使用 Stack 作为主布局
+      child: Stack(
+        children: [
+          // 2. 右侧的按钮组 (交流、拍照、学习)
+          // 使用 Positioned 来精确控制其位置
+          Positioned(
+            top: screenSize.height * 0.20, // 从顶部 20% 的位置开始
+            right: 30, // 距离右边缘 30 像素
+            child: Column(
+              mainAxisSize: MainAxisSize.min, // 让 Column 的高度自适应内容
+              children: [
+                // 文本交流按钮
+                _buildMenuButton(
+                  assetPath: 'assets/Group 222.png',
+                  label: 'ZhuiYu小树洞',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => ChatPage()),
+                    );
+                  },
+                ),
+                // 拍照按钮
+                _buildMenuButton(
+                  assetPath: 'assets/Group 227.png',
+                  label: 'ZhuiYu眼睛',
+                  onTap: () async {
+                    final picker = ImagePicker();
+                    final pickedFile = await picker.pickImage(source: ImageSource.camera);
+                    if (pickedFile != null) {
+                      // uploadImage(pickedFile);
+                    } else {
+                      print('No image selected.');
+                    }
+                  },
+                ),
+                SizedBox(height: 20),
+
+                // 学习按钮
+                _buildMenuButton(
+                  assetPath: 'assets/Group 228.png',
+                  label: 'ZhuiYu唇语视频学习',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => StudyPage()),
+                    );
+                  },
+                ),
+              ],
             ),
           ),
-          child: Stack(
-            children: [
-              Align(
-                alignment: Alignment.topRight,
-                child: Padding(
-                  padding: EdgeInsets.only(
-                    top: MediaQuery.of(context).size.height * 0.25,
-                    bottom: MediaQuery.of(context).size.height * 0.25,
-                    right: MediaQuery.of(context).size.width / 6,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // 交流按钮
-                      Column(
-                        children: [
-                          GestureDetector(
-                            onTap: () async{
-                                // 交流功能
-                                Navigator.push(
-                                  context, 
-                                MaterialPageRoute(builder: (context) => ChatScreen()),
-                              );
-                            },
-                            child: Image.asset('assets/Group 222.png', width: 80, height: 80),
-                          ),
-                          SizedBox(height: 8),
-                          Text('交流'),
-                        ],
-                      ),
-                      SizedBox(height: 30),
-                      // 拍照按钮（中间按钮向右偏移）
-                      Padding(
-                        padding: EdgeInsets.only(left: 30),
-                        child: Column(
-                          children: [
-                            GestureDetector(
-                              onTap: () async {
-                                final picker = ImagePicker();
-                                final pickedFile = await picker.pickImage(source: ImageSource.camera);
-                                if (pickedFile != null) {
-                                  uploadImage(pickedFile);// 处理拍照
-                                } else {
-                                  print('No image selected.');
-                                }
-                              },
-                              child: Image.asset('assets/Group 227.png', width: 80, height: 80),
-                            ),
-                            SizedBox(height: 8),
-                            Text('拍照'),
-                          ],
-                        ),
-                      ),
-                      SizedBox(height: 30),
-                      // 学习按钮
-                      Column(
-                        children: [
-                          GestureDetector(
-                            onTap: () {
-                              // 学习功能待实现
-                              Navigator.push(
-                              context, 
-                              MaterialPageRoute(builder: (context) => WordPuzzlePage()),
-                            );
-                            },
-                            child: Image.asset('assets/Group 228.png', width: 80, height: 80),
-                          ),
-                          SizedBox(height: 8),
-                          Text('学习'),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              // 迁移的aa.png和ab.png图片
-              Positioned(
-                left: 150,
-                top: MediaQuery.of(context).size.height * 0.7,
-                child: Row(
-                  children: [
-                    Image.asset('assets/aa.png', width: 60, height: 60),
-                    SizedBox(width: 15),
-                    Image.asset('assets/ab.png', width: 60, height: 60),
-                  ],
-                ),
-              ),
-              // 录音按钮上方显示ba.png
-              if (_isRecording)
-                Positioned(
-                  left: MediaQuery.of(context).size.width * 0.5 - 67.5,
-                  top: MediaQuery.of(context).size.height * 0.8 - 90, // 位于录音按钮上方
-                  child: Image.asset('assets/ba.png', width: 80, height: 80),
-                ),
-              // 中间下部分放置ac.png(录音按钮)和ad.png(退出按钮)
-              Positioned(
-                left: MediaQuery.of(context).size.width * 0.5 - 67.5,
-                top: MediaQuery.of(context).size.height * 0.8,
-                child: Row(
+          Positioned(
+            top:100,
+            bottom:100,
+            left:200,
+            child: Row(
+              children:[
+                SizedBox(width:30),
+                GestureDetector(
+                  onTap:(){
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context)=>ConversationAudio()),
+                    );
+                  },
+                  child: Image.asset('assets/icon.png',width:60, height: 80),
+                )
+              ],
+            ),
+          ),
+          // 3. 左侧中下部的 ab.png 图片
+          Positioned(
+            left: 30, // 距离左边缘 30
+            bottom: screenSize.height * 0.2, // 距离底部 20%
+            child: Image.asset('assets/ab.png',width:80,height:80),
+          ),
+
+          // 4. 中间底部的录音和退出按钮
+          Positioned(
+            bottom: 50, // 距离底部 50
+            left: 0,
+            right: 0, // left: 0, right: 0 会让子组件在水平方向上填满，配合Row的居中非常有效
+            child: Column( // 使用 Column 包含录音波纹和按钮行
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 录音按钮上方显示 ba.png (波纹)
+                if (_isRecording)
+                  Image.asset('assets/ba.png', width: 80, height: 80),
+                
+                SizedBox(height: 10), // 波纹和按钮的间距
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center, // 让按钮行水平居中
                   children: [
                     // 录音按钮(ac.png)
                     GestureDetector(
-                      onTap: _toggleRecording,
+                      onTap: () {}, // _toggleRecording,
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
                           Image.asset('assets/ac.png', width: 80, height: 80),
-                          if (_isRecording) // 录音状态指示器
+                          if (_isRecording)
                             Container(
                               width: 20,
                               height: 20,
@@ -495,103 +521,93 @@ class _MenuPageState extends State<MenuPage> {
                                 shape: BoxShape.circle,
                               ),
                             ),
-                          // 错误提示
-                          if (_errorMessage != null)
-                            Positioned(
-                              bottom: -30,
-                              left: 0,
-                              right: 0,
-                              child: Text(
-                                _errorMessage!, 
-                                style: TextStyle(color: Colors.red, fontSize: 12),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
                         ],
                       ),
                     ),
-                    SizedBox(width: 15),
+                    SizedBox(width: 40),
                     // 退出按钮(ad.png)
                     GestureDetector(
-                      onTap: () => Navigator.pop(context), // 返回主页
+                      onTap: () => Navigator.pop(context),
                       child: Image.asset('assets/ad.png', width: 80, height: 80),
                     ),
                   ],
                 ),
-              ),
-              // 左上角三分之一区域放置icon2.png
-              Positioned(
-                left: 100,
-                top: 100,
-                width: MediaQuery.of(context).size.width / 4,
-                height: MediaQuery.of(context).size.height / 3,
-                child: Image.asset('assets/icon2.png', fit: BoxFit.contain),
-              ),
-              // 动态对话框 - 聊天气泡效果
-              if (_isDialogVisible)
-                Positioned(
-                  left: 80 + MediaQuery.of(context).size.width / 4 + 10,
-                  top: 100,
-                  child: Stack(
-                    children: [
-                      Container(
-                        constraints: BoxConstraints(
-                          maxWidth: MediaQuery.of(context).size.width / 3,
-                        ),
-                        padding: EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(18),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black12,
-                              blurRadius: 5,
-                              spreadRadius: 1,
-                            ),
-                          ],
-                        ),
-                        child: Text(
-                          _dialogText,
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.black87,
-                          ),
-                        ),
-                      ),
-                      // 聊天气泡三角形指向
-                      Positioned(
-                        left: -10,
-                        top: 20,
-                        child: Container(
-                          width: 20,
-                          height: 20,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black12,
-                                blurRadius: 5,
-                                spreadRadius: 1,
-                              ),
-                            ],
-                          ),
-                          transform: Matrix4.rotationZ(45 * 3.1415926535 / 180),
-                        ),
-                      ),
-                    ],
+                // 错误提示
+                if (_errorMessage != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Text(
+                      _errorMessage!,
+                      style: TextStyle(color: Colors.red, fontSize: 12),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
+
+          // 5. 左上角的 icon2.png
+          Positioned(
+            left: 30, // 距离左边缘 30
+            top: 30,  // 距离顶部 30 (相对于 body)
+            child: Image.asset('assets/icon2.png', width: screenSize.width / 4, fit: BoxFit.contain),
+          ),
+
+          // 6. 动态对话框 - 聊天气泡效果
+          if (_isDialogVisible)
+            Positioned(
+              left: 30 + screenSize.width / 4 + 10, // 定位在 icon 右边
+              top: 30,
+              child: _buildChatBubble(_dialogText), // 将对话框抽成一个辅助方法
+            ),
+        ],
+      ),
+    ),
+  );
+}
+
+// 辅助方法，用于构建菜单按钮，避免代码重复
+Widget _buildMenuButton({
+  required String assetPath,
+  required String label,
+  required VoidCallback onTap,
+}) {
+  return GestureDetector(
+    onTap: onTap,
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Image.asset(assetPath, width: 70, height: 70), // 统一尺寸
+        SizedBox(height: 8),
+        Text(label, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), // 统一文本样式
+      ],
+    ),
+  );
+}
+
+// 辅助方法，用于构建聊天气泡，使 build 方法更整洁
+Widget _buildChatBubble(String text) {
+  // 注意：这个聊天气泡的三角形指向逻辑有些复杂，这里是简化的实现
+  return Container(
+    constraints: BoxConstraints(
+      maxWidth: MediaQuery.of(context).size.width / 3,
+    ),
+    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.2),
+          blurRadius: 4,
+          offset: Offset(0, 2),
         ),
-      );
-    } catch (e) {
-      // 处理播放器操作中的异常
-      print('视频播放器操作错误：$e');
-      setState(() {
-        _errorMessage = '视频操作失败: ${e.toString()}';
-      });
-      return Container(); // 添加默认返回值
-    }
+      ],
+    ),
+    child: Text(
+      text,
+      style: TextStyle(fontSize: 16, color: Colors.black87),
+      ),
+    );
   }
 }

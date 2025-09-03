@@ -11,8 +11,7 @@ class FilePreview extends StatefulWidget {
   final String fileUrl;
   final File? localFile;
 
-  const FilePreview({Key? key, required this.fileUrl, this.localFile}) 
-      : super(key: key);
+  const FilePreview({super.key, required this.fileUrl, this.localFile});
 
   @override
   _FilePreviewState createState() => _FilePreviewState();
@@ -101,7 +100,7 @@ class _FilePreviewState extends State<FilePreview> {
 class AudioPlayerWidget extends StatelessWidget {
   final AudioPlayer player;
 
-  const AudioPlayerWidget({Key? key, required this.player}) : super(key: key);
+  const AudioPlayerWidget({super.key, required this.player});
 
   @override
   Widget build(BuildContext context) {
@@ -162,7 +161,7 @@ class AudioPlayerWidget extends StatelessWidget {
 class FileViewerPage extends StatefulWidget {
   final String fileUrl;
 
-  const FileViewerPage({Key? key, required this.fileUrl}) : super(key: key);
+  const FileViewerPage({super.key, required this.fileUrl});
 
   @override
   _FileViewerPageState createState() => _FileViewerPageState();
@@ -242,7 +241,7 @@ class _FileViewerPageState extends State<FileViewerPage> {
       context,
       MaterialPageRoute(
         builder: (context) => FileViewerPage(
-          fileUrl: 'http://192.168.50.141:5000/api/upload/video.mp4',
+          fileUrl: 'http://192.168.233.1:5000/api/upload/video.mp4',
         ),
       ),
     );

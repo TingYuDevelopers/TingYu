@@ -14,12 +14,12 @@ class WordTile extends StatelessWidget {
   static const double maxScale = 1.3;
 
   const WordTile({
-    Key? key,
+    super.key,
     required this.word,
     this.isDragging = false,
     this.isInTarget = false,
     this.isBeingDragged = false, // 新增参数
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

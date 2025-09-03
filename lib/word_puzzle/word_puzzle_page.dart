@@ -7,7 +7,7 @@ import 'dart:convert'; // 导入dart:convert包以使用jsonEncode
 import 'package:http/http.dart' as http;
 
 class WordPuzzlePage extends StatefulWidget {
-  const WordPuzzlePage({Key? key}) : super(key: key);
+  const WordPuzzlePage({super.key});
 
   @override
   _WordPuzzlePageState createState() => _WordPuzzlePageState();
@@ -46,7 +46,7 @@ class _WordPuzzlePageState extends State<WordPuzzlePage> {
     print('拼接成的字符串: $sentence');
 
     // 发送 HTTP POST 请求
-    final url = Uri.parse('http://192.168.50.141:5000/api/upload'); // 替换为你的 Flask API 地址
+    final url = Uri.parse('http://192.168.233.1:5000/api/upload'); // 替换为你的 Flask API 地址
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
@@ -257,7 +257,7 @@ class _WordPuzzlePageState extends State<WordPuzzlePage> {
                               );
                             },
                             onWillAcceptWithDetails: (data) {
-                              if (data != null && data != index) {
+                              if (data != index) {
                                 setState(() {
                                   _hoveringIndexInTarget = index;
                                 });
@@ -283,7 +283,7 @@ class _WordPuzzlePageState extends State<WordPuzzlePage> {
                   );
                 },
                 onWillAcceptWithDetails: (data) {
-                  return data != null && !targetWords.contains(data);
+                  return !targetWords.contains(data);
                 },
                 onAcceptWithDetails: (details) {
                   setState(() {
