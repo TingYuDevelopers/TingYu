@@ -49,7 +49,7 @@ class _ChatPageState extends State<ChatPage> {
       builder: (context, chatService, child) {
         return Scaffold(
           appBar: AppBar(
-            title: const Text('ZhuiYu聊天室'),
+            title: const Text('缀语聊天室'),
           ),
           body: Column(
             children: [

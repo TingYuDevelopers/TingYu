@@ -44,7 +44,7 @@ class ChatService with ChangeNotifier {
 
   // --- API 地址配置 ---
   // 3. 将 ws://.../chat 改为 http://... ，并移除路径，因为路径在连接时指定
-  static const String _host = kIsWeb ? 'localhost' : '10.0.2.2';
+  static const String _host = '198.168.50.140' ;
   static final String _serverUrl = 'http://$_host:5000'; // Socket.IO 使用 http/https
   static final Uri _uploadUrl = Uri.parse('http://$_host:5000/upload');
 
